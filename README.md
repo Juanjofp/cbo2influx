@@ -2,7 +2,7 @@
 
 # CBO2Influx
 
-Little tool to receive Orion Context Broken subscriptions and save data into InfluxDB.
+Little tool to receive Orion Context Broker subscriptions and save data into InfluxDB.
 
 ## Docker
 
