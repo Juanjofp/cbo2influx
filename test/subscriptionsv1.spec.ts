@@ -1,7 +1,12 @@
-import fetch from 'node-fetch';
 import { App, buildApp } from '../src/app';
-// import { buildConfig } from '../src/config';
+import {
+    notification,
+    notificationString,
+    createDB,
+    dropDB
+} from './test-utils/data';
 
+const defaultDB = 'mydatabase';
 jest.mock('../src/config', () => {
     return {
         buildConfig() {
@@ -9,7 +14,7 @@ jest.mock('../src/config', () => {
                 influx: {
                     host: 'http://localhost',
                     port: 8087,
-                    db: 'centic',
+                    db: defaultDB,
                     token: 'juanjo:juanjofp'
                 }
             };
@@ -17,74 +22,6 @@ jest.mock('../src/config', () => {
     };
 });
 
-const data = [
-    {
-        id: 'age01_Car',
-        type: 'Device',
-        Acceleration: {
-            type: 'Number',
-            value: 40,
-            metadata: {
-                dateCreated: {
-                    type: 'DateTime',
-                    value: '2021-03-11T14:22:08.953Z'
-                },
-                dateModified: {
-                    type: 'DateTime',
-                    value: '2021-03-29T15:16:44.983Z'
-                }
-            }
-        },
-        Engine_Oxigen: {
-            type: 'Number',
-            value: 0,
-            metadata: {
-                dateCreated: {
-                    type: 'DateTime',
-                    value: '2021-03-11T14:22:08.953Z'
-                },
-                dateModified: {
-                    type: 'DateTime',
-                    value: '2021-03-29T15:09:49.876Z'
-                }
-            }
-        },
-        Engine_Temperature: {
-            type: 'Number',
-            value: 20,
-            metadata: {
-                dateCreated: {
-                    type: 'DateTime',
-                    value: '2021-03-11T14:22:08.953Z'
-                },
-                dateModified: {
-                    type: 'DateTime',
-                    value: '2021-03-29T15:09:49.849Z'
-                }
-            }
-        }
-    }
-];
-
-const notification = {
-    subscriptionId: '6061ee734c18649aeb0fb4d8',
-    data: data
-};
-
-async function createDB(dbname: string) {
-    await fetch(`http://localhost:8087/query?q=CREATE DATABASE ${dbname}`, {
-        method: 'POST',
-        headers: {
-            Authorization: 'Token admin:juanjofp'
-        }
-    });
-}
-
-async function dropDB(dbname: string) {
-    await fetch(`http://localhost:8087/query?q=DROP DATABASE ${dbname}`, {
-        method: 'POST'
-    });
-}
 describe('SubscriptionV1', () => {
     let app: App;
 
@@ -96,18 +33,18 @@ describe('SubscriptionV1', () => {
     });
 
     test('should return 200 ok when receive a valid CBO notification', async () => {
-        await createDB('centic');
+        await createDB(defaultDB);
         const response = await app.getServer().inject({
             method: 'POST',
             url: '/v1',
             payload: notification
         });
-        await dropDB('centic');
+        await dropDB(defaultDB);
         expect(response.statusCode).toBe(200);
         const body = JSON.parse(response.body);
 
         expect(body.status).toEqual(204);
-        expect(body.url).toEqual('http://localhost:8087/write?db=centic');
+        expect(body.url).toEqual('http://localhost:8087/write?db=' + defaultDB);
         expect(body.body).toContain(
             'Acceleration,id=age01_Car,type=Device,host=localhost value=40'
         );
@@ -163,6 +100,31 @@ describe('SubscriptionV1', () => {
         );
         expect(body.body).toContain(
             'Engine_Oxigen,id=age01_Car,type=Device,host=localhost value=0'
+        );
+        expect(body.body).toContain(
+            'Engine_Temperature,id=age01_Car,type=Device,host=localhost value=20'
+        );
+    });
+
+    test('should return 200 ok when receive a valid CBO notification containing a string', async () => {
+        await createDB('fiware');
+        const response = await app.getServer().inject({
+            method: 'POST',
+            url: '/v1/fiware',
+            payload: notificationString
+        });
+        await dropDB('fiware');
+
+        expect(response.statusCode).toBe(200);
+        const body = JSON.parse(response.body);
+
+        expect(body.status).toEqual(204);
+        expect(body.url).toEqual('http://localhost:8087/write?db=fiware');
+        expect(body.body).toContain(
+            'Start_Time,id=age01_Car,type=Device,host=localhost value="2021-03-11T14:22:08.953Z"'
+        );
+        expect(body.body).toContain(
+            'Order,id=age01_Car,type=Device,host=localhost value="123z 345+234=7"'
         );
         expect(body.body).toContain(
             'Engine_Temperature,id=age01_Car,type=Device,host=localhost value=20'

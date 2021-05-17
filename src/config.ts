@@ -54,13 +54,13 @@ export function buildConfig(): Config {
             org: {
                 doc: 'The organization in InfluxDB',
                 format: String,
-                default: 'overtel',
+                default: 'myorg',
                 env: 'INFLUC_ORG'
             },
             bucket: {
                 doc: 'The backet where write data',
                 format: String,
-                default: 'centic',
+                default: 'mybucket',
                 env: 'INFLUX_BUCKET'
             },
             db: {

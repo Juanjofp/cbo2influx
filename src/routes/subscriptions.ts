@@ -24,7 +24,7 @@ export type Subscription = {
     data: SubscriptionData[];
 };
 export type SubscriptionData = Record<string, string | SubscriptionAttribute>;
-function extractHostname(hostname: string) {
+export function extractHostname(hostname: string): string {
     if (!hostname || typeof hostname !== 'string') {
         return 'default';
     }
@@ -43,8 +43,15 @@ const parseRequest = (request: FastifyRequest<{ Body: Subscription }>) => {
             .filter(key => key !== 'id' && key !== 'type')
             .forEach(key => {
                 const value = element[key] as SubscriptionAttribute;
-                const body = `${key},id=${id},type=${type},host=${hostname} value=${value.value} ${dateTime}`;
-                requests.push(body);
+                // TODO: Manage when is String
+                const finalValue = value.value;
+                if (typeof finalValue === 'number') {
+                    const body = `${key},id=${id},type=${type},host=${hostname} value=${finalValue} ${dateTime}`;
+                    requests.push(body);
+                } else {
+                    const body = `${key},id=${id},type=${type},host=${hostname} value="${finalValue}" ${dateTime}`;
+                    requests.push(body);
+                }
             });
     });
 
@@ -92,56 +99,6 @@ export function buildSubscriptionRoute(config: Config) {
         return reqParams;
     };
 
-    // async function receiveSubscriptionV2(
-    //     request: FastifyRequest<{
-    //         Params: { bucket: string };
-    //         Body: Subscription;
-    //     }>,
-    //     reply: FastifyReply<Server>
-    // ) {
-    //     const bucket = request.params.bucket ?? config.influx.bucket;
-    //     const influxServerV2 = `${host}:${port}/api/v2/write?org=${org}&bucket=${bucket}&precision=ns`;
-    //     const bodies = parseRequest(request);
-    //     try {
-    //         const responses: {
-    //             url: string;
-    //             body: string;
-    //             status: number;
-    //             error?: string;
-    //         }[] = [];
-    //         for (const body of bodies) {
-    //             const response = await fetch(influxServerV2, {
-    //                 method: 'POST',
-    //                 headers: {
-    //                     Authorization: 'Token ' + config.influx.token
-    //                 },
-    //                 body
-    //             });
-    //             let error: string | undefined;
-    //             if (response.status >= 400) {
-    //                 const jsonError = await response.json();
-    //                 error = jsonError.error || jsonError.message;
-    //             }
-    //             logger.info({
-    //                 url: influxServerV2,
-    //                 body,
-    //                 status: response.status,
-    //                 error
-    //             });
-    //             responses.push({
-    //                 url: influxServerV2,
-    //                 body,
-    //                 status: response.status,
-    //                 error
-    //             });
-    //         }
-    //         reply.status(200).send(responses);
-    //     } catch (error) {
-    //         logger.error(error);
-    //         reply.status(500).send({ code: 500, error: error.message });
-    //     }
-    // }
-
     async function receiveSubscriptionV2(
         request: FastifyRequest<{
             Params: { bucket: string };
@@ -149,10 +106,11 @@ export function buildSubscriptionRoute(config: Config) {
         }>,
         reply: FastifyReply<Server>
     ) {
-        const bucket = request.params.bucket ?? config.influx.bucket;
-        const influxServerV2 = `${host}:${port}/api/v2/write?org=${org}&bucket=${bucket}&precision=ns`;
-        const body = parseRequest(request);
         try {
+            const bucket = request.params.bucket ?? config.influx.bucket;
+            const influxServerV2 = `${host}:${port}/api/v2/write?org=${org}&bucket=${bucket}&precision=ns`;
+            const body = parseRequest(request);
+
             const reqParams = createRequestParams(body);
             const influxResponse = await fetch(influxServerV2, reqParams);
             const response = await parseResponse(
@@ -163,7 +121,11 @@ export function buildSubscriptionRoute(config: Config) {
             reply.status(200).send(response);
         } catch (error) {
             logger.error(error);
-            reply.status(500).send({ code: 500, error: error.message });
+            reply.status(400).send({
+                statusCode: 400,
+                message: error.message,
+                error: 'Invalid request'
+            });
         }
     }
 
@@ -171,10 +133,11 @@ export function buildSubscriptionRoute(config: Config) {
         request: FastifyRequest<{ Params: { db: string }; Body: Subscription }>,
         reply: FastifyReply<Server>
     ) {
-        const db = request.params.db ?? config.influx.db;
-        const influxServerV1 = `${host}:${port}/write?db=${db}`;
-        const body = parseRequest(request);
         try {
+            const db = request.params.db ?? config.influx.db;
+            const influxServerV1 = `${host}:${port}/write?db=${db}`;
+            const body = parseRequest(request);
+
             const reqParams = createRequestParams(body);
             const influxResponse = await fetch(influxServerV1, reqParams);
             const response = await parseResponse(
@@ -185,7 +148,11 @@ export function buildSubscriptionRoute(config: Config) {
             reply.status(200).send(response);
         } catch (error) {
             logger.error(error);
-            reply.status(500).send({ code: 500, error: error.message });
+            reply.status(400).send({
+                statusCode: 400,
+                message: error.message,
+                error: 'Invalid request'
+            });
         }
     }
 

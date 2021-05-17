@@ -1,5 +1,4 @@
 version: '3'
-
 services:
     ################ OCB ################
     orion:
@@ -30,19 +29,7 @@ services:
             options:
                 max-file: '5'
                 max-size: '10m'
-    grafana:
-        image: grafana/grafana
-        ports:
-            - '3001:3000'
-        environment:
-            - plugins=crate-datasource,grafana-clock-panel,grafana-worldmap-pane
-        volumes:
-            - grafana_data:/var/lib/grafana
-        logging:
-            driver: 'json-file'
-            options:
-                max-file: '5'
-                max-size: '10m'
+
     ################# CBO2INFLUX AND INFLUXDB #############
     cbo2influx:
         hostname: cbo2influx
@@ -58,9 +45,6 @@ services:
             - INFLUX_TOKEN=1apeD-rqRprWCsiGFN6I15yQhZrCJK3gRFgjfOnqRc0M8z0q0WU5qcGgiZ_VgWiDu_6BjkH5mhKnYaFJjVKjMw==
     influxdb:
         image: influxdb
-        networks:
-            - hostnet
-            - ocbnet
         ports:
             - 8086:8086
         environment:

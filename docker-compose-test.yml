@@ -1,0 +1,30 @@
+version: '3'
+services:
+    influxdb:
+        image: influxdb
+        ports:
+            - 8086:8086
+        environment:
+            - DOCKER_INFLUXDB_INIT_MODE=setup
+            - DOCKER_INFLUXDB_INIT_USERNAME=juanjo
+            - DOCKER_INFLUXDB_INIT_PASSWORD=juanjofp
+            - DOCKER_INFLUXDB_INIT_ORG=myorg
+            - DOCKER_INFLUXDB_INIT_BUCKET=mybucket
+            - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=1apeD-rqRprWCsiGFN6I15yQhZrCJK3gRFgjfOnqRc0M8z0q0WU5qcGgiZ_VgWiDu_6BjkH5mhKnYaFJjVKjMw==
+    influxdb17:
+        image: influxdb:1.7.11-alpine
+        hostname: influxdb17
+        ports:
+            - 8087:8086
+        environment:
+            - INFLUX_DB=mydatabase
+            - INFLUXDB_USER=juanjo
+            - INFLUXDB_ADMIN_ENABLED=true
+            - INFLUXDB_ADMIN_USER=juanjo
+            - INFLUXDB_ADMIN_PASSWORD=juanjofp
+        volumes:
+            - influxdb-storage17:/var/lib/influxdb
+
+volumes:
+    influxdb-storage:
+    influxdb-storage17:
