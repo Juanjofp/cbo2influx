@@ -45,7 +45,10 @@ const parseRequest = (request: FastifyRequest<{ Body: Subscription }>) => {
                 const value = element[key] as SubscriptionAttribute;
                 // TODO: Manage when is String
                 const finalValue = value.value;
-                if (typeof finalValue === 'number') {
+                const typeValue = value.type;
+                if (!finalValue) {
+                    logger.info({ error: 'No value', ...value });
+                } else if (!isNaN(+finalValue) && typeValue !== 'string') {
                     const body = `${key},id=${id},type=${type},host=${hostname} value=${finalValue} ${dateTime}`;
                     requests.push(body);
                 } else {

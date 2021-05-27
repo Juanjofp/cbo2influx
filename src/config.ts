@@ -55,7 +55,7 @@ export function buildConfig(): Config {
                 doc: 'The organization in InfluxDB',
                 format: String,
                 default: 'myorg',
-                env: 'INFLUC_ORG'
+                env: 'INFLUX_ORG'
             },
             bucket: {
                 doc: 'The backet where write data',
